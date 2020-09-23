@@ -114,7 +114,7 @@ namespace Fluent.Tests
                         .WithExistingResourceGroup(resourceGroup)
                         .WithWindowsImage()
                         //.WithImageSku(VirtualMachineSizeTypes.StandardD2V2)
-                        .WithReliability(ReliabilityLevel.Silver)
+                        .WithReliabilityLevel(ReliabilityLevel.Silver)
                         .WithOneCertificateOnly(clusterCertificate)
                         .WithStorageAccountDiagnostics(storageVmDisks)
                         .AddNodeType(nodeTypeName)
@@ -129,7 +129,7 @@ namespace Fluent.Tests
                     //        "value": "myclustername.southcentralus.cloudapp.azure.com"
                     //    },
 
-                   //Assert.Equal(ReliabilityLevel.Silver, serviceFabricCluster.ReliabilityLevel);
+                   Assert.Equal(ReliabilityLevel.Silver, serviceFabricCluster.Inner.ReliabilityLevel);
                 }
                 finally
                 {

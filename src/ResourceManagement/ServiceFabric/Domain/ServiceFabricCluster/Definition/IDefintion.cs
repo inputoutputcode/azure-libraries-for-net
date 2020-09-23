@@ -4,7 +4,7 @@ using Microsoft.Azure.Management.ResourceManager.Fluent.Core.Resource.Definition
 using Microsoft.Azure.Management.ResourceManager.Fluent.Core.GroupableResource.Definition;
 using Microsoft.Azure.Management.Storage.Fluent;
 using Microsoft.Azure.Management.ResourceManager.Fluent.Core.ResourceActions;
-
+using System;
 
 namespace Microsoft.Azure.Management.ServiceFabric.Fluent.ServiceFabricCluster.Definition
 {
@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Management.ServiceFabric.Fluent.ServiceFabricCluster.D
         IWithGroup,
         IWithCreate,
         IWithWindowsImage,
-        IWithReliability,
+        IWithReliabilityLevel,
         IWithOneCertificateOnly,
         IWithStorageAccountDiagnostics,
         IAddNodeType,
@@ -48,12 +48,12 @@ namespace Microsoft.Azure.Management.ServiceFabric.Fluent.ServiceFabricCluster.D
 
     public interface IWithWindowsImage
     {
-        IWithReliability WithWindowsImage();
+        IWithReliabilityLevel WithWindowsImage();
     }
 
-    public interface IWithReliability
+    public interface IWithReliabilityLevel
     {
-        IWithOneCertificateOnly WithReliability(ReliabilityLevel reliabilityLevel);
+        IWithOneCertificateOnly WithReliabilityLevel(ReliabilityLevel reliabilityLevel);
     }
 
     public interface IWithOneCertificateOnly

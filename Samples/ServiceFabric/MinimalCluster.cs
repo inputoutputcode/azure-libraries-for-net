@@ -542,7 +542,7 @@ namespace Samples.ServiceFabric
                 .WithRegion(region)
                 .WithExistingResourceGroup(groupName)
                 .WithWindowsImage()
-                .WithReliability(ReliabilityLevel.Silver)
+                .WithReliabilityLevel(ReliabilityLevel.Silver)
                 .WithOneCertificateOnly(cert)
                 .WithStorageAccountDiagnostics(storageAccount2)
                 .AddNodeType(primaryNodeTypeName)

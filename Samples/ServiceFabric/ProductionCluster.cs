@@ -541,7 +541,7 @@ namespace Samples.ServiceFabric
                 .WithExistingResourceGroup(groupName)
                 .WithWindowsImage()
                 //.WithUpgradeMode(UpgradeMode.Automatic)
-                .WithReliability(ReliabilityLevel.Silver)
+                .WithReliabilityLevel(ReliabilityLevel.Silver)
                 //.WithAddonFeature(AddOnFeatures.RepairManager)
                 //.WithAddonFeature(AddOnFeatures.ResourceMonitorService)
                 //.WithAddonFeature(AddOnFeatures.DnsService)

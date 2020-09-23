@@ -13,10 +13,7 @@ namespace Microsoft.Azure.Management.ServiceFabric.Fluent
     /// </summary>
     public interface IServiceFabricCluster :
         IBeta,
-        IGroupableResource<
-                IServiceFabricManager,
-                ClusterParameters
-            >,
+        IGroupableResource<IServiceFabricManager, ClusterParameters>,
         IRefreshable<IServiceFabricCluster>,
         IUpdatable<Microsoft.Azure.Management.ServiceFabric.Fluent.ServiceFabricCluster.Update.IUpdate>
     {
