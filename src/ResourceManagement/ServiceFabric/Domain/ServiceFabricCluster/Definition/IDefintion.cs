@@ -3,7 +3,6 @@ using Microsoft.Azure.Management.ServiceFabric.Fluent.Models;
 using Microsoft.Azure.Management.ResourceManager.Fluent.Core.Resource.Definition;
 using Microsoft.Azure.Management.ResourceManager.Fluent.Core.GroupableResource.Definition;
 using Microsoft.Azure.Management.Storage.Fluent;
-using Microsoft.Azure.Management.Compute.Fluent;
 using Microsoft.Azure.Management.ResourceManager.Fluent.Core.ResourceActions;
 
 
@@ -15,10 +14,8 @@ namespace Microsoft.Azure.Management.ServiceFabric.Fluent.ServiceFabricCluster.D
     public interface IDefinition :
         IBlank,
         IWithGroup,
-        IWithCreate,
-        IWithVmImage,
-        IWithReliability
-    {
+        IWithCreate
+    { 
     }
 
     /// <summary>
@@ -43,30 +40,19 @@ namespace Microsoft.Azure.Management.ServiceFabric.Fluent.ServiceFabricCluster.D
     {
     }
 
-    public interface IWithParameters : 
-        IWithCreate
-    { 
-        
+    public interface IWithVmImage
+    {
+        IWithReliability WithVmImage(Environment environment);
     }
 
-    public interface IWithVmImage : IWithCreate
+    public interface IWithReliability
     {
-        IWithCreate WithVmImage(Environment environment);
+        IWithOneCertificateOnly WithReliability(ReliabilityLevel reliabilityLevel);
     }
 
-    public interface IWithReliability : IWithCreate
+    public interface IWithOneCertificateOnly
     {
-        IWithCreate WithReliability(ReliabilityLevel reliabilityLevel);
-    }
-
-    public interface IWithOneCertificate
-    {
-        IWithStorageAccountVmDisks WithOneCertificate(X509Certificate2 x509Certificate2);
-    }
-
-    public interface IWithStorageAccountVmDisks
-    {
-        IWithStorageAccountDiagnostics WithStorageAccountVmDisks(IStorageAccount storageAccount);
+        IWithStorageAccountDiagnostics WithOneCertificateOnly(X509Certificate2 x509Certificate2);
     }
 
     public interface IWithStorageAccountDiagnostics

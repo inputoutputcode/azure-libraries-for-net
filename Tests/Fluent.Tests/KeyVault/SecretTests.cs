@@ -15,6 +15,9 @@ using Microsoft.Azure.Test.HttpRecorder;
 using Microsoft.Azure.Management.ResourceManager.Fluent;
 using Microsoft.Azure.Management.Graph.RBAC.Fluent;
 using System.Collections.Generic;
+using System.Security.Cryptography.X509Certificates;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace Fluent.Tests
 {
@@ -98,5 +101,78 @@ namespace Fluent.Tests
             }
         }
 
+        [Fact]
+        public void CanUploadPfxAsSecret()
+        {
+            using (var context = FluentMockContext.Start(GetType().FullName))
+            {
+                IGraphRbacManager graphManager = TestHelper.CreateGraphRbacManager();
+                string vaultName1 = TestUtilities.GenerateName("vault1");
+                string secretName = TestUtilities.GenerateName("secret1");
+                string rgName = TestUtilities.GenerateName("rgNEMV");
+
+                IKeyVaultManager manager = TestHelper.CreateKeyVaultManager();
+
+                var spnCredentialsClientId = HttpMockServer.Variables[ConnectionStringKeys.ServicePrincipalKey];
+
+                try
+                {
+                    IVault vault = manager.Vaults
+                            .Define(vaultName1)
+                            .WithRegion(Region.USWest)
+                            .WithNewResourceGroup(rgName)
+                            .DefineAccessPolicy()
+                                .ForServicePrincipal(spnCredentialsClientId)
+                                .AllowKeyAllPermissions()
+                                .AllowSecretAllPermissions()
+                                .Attach()
+                            .Create();
+                    Assert.NotNull(vault);
+
+                    SdkContext.DelayProvider.Delay(10000);
+
+                    string commonName = "mysfcluster.azure.com";
+                    var certificate = CreateSelfSignedServerCertificate(commonName);
+                    string rawCertData = Convert.ToBase64String(certificate.RawData, 0, certificate.RawData.Length);
+
+                    var secret = vault.Secrets.Define("mysfcluster")
+                            .WithValue(rawCertData)
+                            .Create();
+
+                    Assert.NotNull(secret);
+                    Assert.NotNull(secret.Id);
+                    Assert.Equal("Some secret value", secret.Value);
+                }
+                finally
+                {
+                    try
+                    {
+                        TestHelper.CreateResourceManager().ResourceGroups.DeleteByName(rgName);
+                    }
+                    catch { }
+                }
+            }
+        }
+
+        private X509Certificate2 CreateSelfSignedServerCertificate(string commonName)
+        {
+            var sanBuilder = new SubjectAlternativeNameBuilder();
+            sanBuilder.AddDnsName(commonName);
+
+            var distinguishedName = new X500DistinguishedName($"CN={commonName}");
+
+            using (var rsa = RSA.Create(2048))
+            {
+                var request = new CertificateRequest(distinguishedName, rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+                request.CertificateExtensions.Add(new X509KeyUsageExtension(X509KeyUsageFlags.KeyEncipherment | X509KeyUsageFlags.DigitalSignature, false));
+                request.CertificateExtensions.Add(new X509EnhancedKeyUsageExtension(new OidCollection { new Oid("1.3.6.1.5.5.7.3.2"), new Oid("1.3.6.1.5.5.7.3.1") }, false));
+                request.CertificateExtensions.Add(sanBuilder.Build());
+
+                var certificate = request.CreateSelfSigned(new DateTimeOffset(DateTime.UtcNow.AddDays(-1)), new DateTimeOffset(DateTime.UtcNow.AddDays(3650)));
+                certificate.FriendlyName = commonName;
+
+                return new X509Certificate2(certificate.Export(X509ContentType.Pfx, "Corp123!Corp1232!"), "Corp123!Corp1232!", X509KeyStorageFlags.MachineKeySet);
+            }
+        }
     }
 }

@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Management.ServiceFabric.Fluent
         GroupableResources<
             IServiceFabricCluster,
             ServiceFabricClusterImpl,
-            ServiceResourceInner,
+            ClusterParameters,
             IClustersOperations,
             IServiceFabricManager>,
         IServiceFabricClusters
@@ -33,10 +33,10 @@ namespace Microsoft.Azure.Management.ServiceFabric.Fluent
         /// </summary>
         protected override ServiceFabricClusterImpl WrapModel(string name)
         {
-            return new ServiceFabricClusterImpl(name, new ServiceResourceInner(), this.Manager);
+            return new ServiceFabricClusterImpl(name, new ClusterParameters(), this.Manager);
         }
 
-        protected override IServiceFabricCluster WrapModel(ServiceResourceInner inner)
+        protected override IServiceFabricCluster WrapModel(ClusterParameters inner)
         {
             if (inner == null)
             {

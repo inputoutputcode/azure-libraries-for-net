@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Management.ServiceFabric.Fluent
         IBeta,
         IGroupableResource<
                 IServiceFabricManager,
-                ServiceResourceInner
+                ClusterParameters
             >,
         IRefreshable<IServiceFabricCluster>,
         IUpdatable<Microsoft.Azure.Management.ServiceFabric.Fluent.ServiceFabricCluster.Update.IUpdate>

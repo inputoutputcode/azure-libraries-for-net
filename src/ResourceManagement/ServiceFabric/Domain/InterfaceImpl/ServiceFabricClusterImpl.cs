@@ -1,13 +1,17 @@
-﻿using Microsoft.Azure.Management.ServiceFabric.Fluent.ServiceFabricCluster.Definition;
+﻿using Microsoft.Azure.Management.ServiceFabric.Fluent.Models;
+using Microsoft.Azure.Management.ServiceFabric.Fluent.ServiceFabricCluster.Definition;
 
 
 namespace Microsoft.Azure.Management.ServiceFabric.Fluent.Domain.InterfaceImpl
 {
     internal partial class ServiceFabricClusterImpl
     {
-        IWithCreate IWithVmImage.WithVmImage()
+        string IWithVmImage.VmImage
         {
-            return this.WithVmImage();
+            get 
+            {
+               return this.VmImage();
+            }
         }
 
     }

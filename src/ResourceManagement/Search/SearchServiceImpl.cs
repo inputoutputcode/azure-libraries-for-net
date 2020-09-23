@@ -217,7 +217,7 @@ namespace Microsoft.Azure.Management.Search.Fluent
         ///GENMHASH:BFF45BC391E5CDAFEBC876B36BD8488F:4D9AAD25C10BAC2CEE634A1422220CC7
         public SearchServiceImpl WithFreeSku()
         {
-            this.Inner.Sku = new Sku(SkuName.Free);
+            this.Inner.Sku = Environment.Windows.ToString();
 
             return this;
         }

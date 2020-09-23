@@ -22,11 +22,11 @@ namespace Microsoft.Azure.Management.ServiceFabric.Fluent
     internal partial class ServiceFabricClusterImpl :
         GroupableResource<
             IServiceFabricCluster,
-            ServiceResourceInner,
+            ClusterParameters,
             ServiceFabricClusterImpl,
             IServiceFabricManager,
             IWithGroup,
-            IWithParameters,
+            IWithVmImage,
             IWithCreate,
             IUpdate>,
         IServiceFabricCluster,
@@ -37,20 +37,28 @@ namespace Microsoft.Azure.Management.ServiceFabric.Fluent
 
         public string ClusterState => throw new NotImplementedException();
 
-        ServiceFabricVersion IServiceFabricCluster.Version => throw new NotImplementedException();
-
-        IServiceFabricManager IHasManager<IServiceFabricManager>.Manager => throw new NotImplementedException();
-
-        internal ServiceFabricClusterImpl(string name, ServiceResourceInner innerModel, IServiceFabricManager manager)
+        internal ServiceFabricClusterImpl(string name, ClusterParameters innerModel, IServiceFabricManager manager)
             : base(name, innerModel, manager)
         {
         }
 
-        public IWithCreate WithVmImage(Environment environment)
-        {
-            this.Inner.ClusterParameters.VmImage = Microsoft.Azure.Management.ServiceFabric.Fluent.Models.Environment.Windows.ToString();
+//.WithReliability(ReliabilityLevel.Silver)
+//.WithOneCertificateOnly(clusterCertificate)
+//.WithStorageAccountDiagnostics(storageVmDisks)
+//.AddNodeType(nodeTypeName)
 
-            return this;
+        public string VmImage(Environment environment)
+        {
+            this.Inner.VmImage = environment.ToString();
+
+            return this.Inner.VmImage;
+        }
+
+        public string Reliability(Environment environment)
+        {
+            this.Inner.VmImage = environment.ToString();
+
+            return this.Inner.VmImage;
         }
 
         public override Task<IServiceFabricCluster> CreateResourceAsync(CancellationToken cancellationToken)
@@ -58,10 +66,15 @@ namespace Microsoft.Azure.Management.ServiceFabric.Fluent
             throw new NotImplementedException();
         }
 
-        protected override Task<ServiceResourceInner> GetInnerAsync(CancellationToken cancellationToken)
+        protected override Task<ClusterParameters> GetInnerAsync(CancellationToken cancellationToken)
         {
             throw new NotImplementedException();
         }
+
+        ServiceFabricVersion IServiceFabricCluster.Version => throw new NotImplementedException();
+
+        IServiceFabricManager IHasManager<IServiceFabricManager>.Manager => throw new NotImplementedException();
+
     }
 }
 
