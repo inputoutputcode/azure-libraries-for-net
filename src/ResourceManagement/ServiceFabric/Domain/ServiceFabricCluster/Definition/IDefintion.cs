@@ -14,7 +14,13 @@ namespace Microsoft.Azure.Management.ServiceFabric.Fluent.ServiceFabricCluster.D
     public interface IDefinition :
         IBlank,
         IWithGroup,
-        IWithCreate
+        IWithCreate,
+        IWithWindowsImage,
+        IWithReliability,
+        IWithOneCertificateOnly,
+        IWithStorageAccountDiagnostics,
+        IAddNodeType,
+        IWithDefaults
     { 
     }
 
@@ -36,13 +42,13 @@ namespace Microsoft.Azure.Management.ServiceFabric.Fluent.ServiceFabricCluster.D
     {
     }
 
-    public interface IWithGroup : IWithGroup<IWithVmImage>
+    public interface IWithGroup : IWithGroup<IWithWindowsImage>
     {
     }
 
-    public interface IWithVmImage
+    public interface IWithWindowsImage
     {
-        IWithReliability WithVmImage(Environment environment);
+        IWithReliability WithWindowsImage();
     }
 
     public interface IWithReliability
@@ -60,8 +66,13 @@ namespace Microsoft.Azure.Management.ServiceFabric.Fluent.ServiceFabricCluster.D
         IAddNodeType WithStorageAccountDiagnostics(IStorageAccount storageAccount);
     }
     
+    public interface IWithDefaults
+    {
+        IWithCreate WithDefaults();
+    }
+
     public interface IAddNodeType
     {
-        IWithCreate AddNodeType(string nodeTypeName);
+        IWithDefaults AddNodeType(string nodeTypeName);
     }
 }

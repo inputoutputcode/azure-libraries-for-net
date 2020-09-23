@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Management.ServiceFabric.Fluent
             throw new System.NotImplementedException();
         }
 
-        protected override Task<ServiceResourceInner> GetInnerByGroupAsync(string groupName, string name, CancellationToken cancellationToken)
+        protected override Task<ClusterParameters> GetInnerByGroupAsync(string groupName, string name, CancellationToken cancellationToken)
         {
             throw new System.NotImplementedException();
         }

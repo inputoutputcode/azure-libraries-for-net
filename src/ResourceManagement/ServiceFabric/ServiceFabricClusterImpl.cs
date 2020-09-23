@@ -12,7 +12,8 @@ using Microsoft.Azure.Management.ResourceManager.Fluent.Core.Resource.Definition
 using Microsoft.Azure.Management.ResourceManager.Fluent.Core;
 
 using Environment = Microsoft.Azure.Management.ServiceFabric.Fluent.Models.Environment;
-
+using System.Security.Cryptography.X509Certificates;
+using Microsoft.Azure.Management.Storage.Fluent;
 
 namespace Microsoft.Azure.Management.ServiceFabric.Fluent
 {
@@ -26,7 +27,7 @@ namespace Microsoft.Azure.Management.ServiceFabric.Fluent
             ServiceFabricClusterImpl,
             IServiceFabricManager,
             IWithGroup,
-            IWithVmImage,
+            IWithWindowsImage,
             IWithCreate,
             IUpdate>,
         IServiceFabricCluster,
@@ -47,11 +48,11 @@ namespace Microsoft.Azure.Management.ServiceFabric.Fluent
 //.WithStorageAccountDiagnostics(storageVmDisks)
 //.AddNodeType(nodeTypeName)
 
-        public string VmImage(Environment environment)
+        public ServiceFabricClusterImpl WindowsImage()
         {
-            this.Inner.VmImage = environment.ToString();
+            this.Inner.VmImage = Environment.Windows.ToString();
 
-            return this.Inner.VmImage;
+            return this;
         }
 
         public string Reliability(Environment environment)
@@ -67,6 +68,31 @@ namespace Microsoft.Azure.Management.ServiceFabric.Fluent
         }
 
         protected override Task<ClusterParameters> GetInnerAsync(CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IWithOneCertificateOnly WithReliability(ReliabilityLevel reliabilityLevel)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IWithStorageAccountDiagnostics WithOneCertificateOnly(X509Certificate2 x509Certificate2)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IAddNodeType WithStorageAccountDiagnostics(IStorageAccount storageAccount)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IWithDefaults AddNodeType(string nodeTypeName)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IWithCreate WithDefaults()
         {
             throw new NotImplementedException();
         }

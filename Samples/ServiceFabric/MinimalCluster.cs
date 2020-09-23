@@ -538,17 +538,16 @@ namespace Samples.ServiceFabric
             var azureActiveDirectory = new AzureActiveDirectory();
             var clusterCertificate = vault1.Secrets.GetByName(clusterCertificateName);
 
-            await azure.ServiceFabricClusters.Define(clusterName)
+            azure.ServiceFabricClusters.Define(clusterName)
                 .WithRegion(region)
                 .WithExistingResourceGroup(groupName)
-                .WithOsType(ServiceFabricOsType.Windows)
+                .WithWindowsImage()
                 .WithReliability(ReliabilityLevel.Silver)
-                .WithOneCertificate(cert)
-                .WithStorageAccountVmDisks(storageAccount)
+                .WithOneCertificateOnly(cert)
                 .WithStorageAccountDiagnostics(storageAccount2)
                 .AddNodeType(primaryNodeTypeName)
-                    .WithScaleSet(scaleSet)
-                .CreateAsync();
+                .WithDefaults()
+                .Create();
 
             #endregion
 

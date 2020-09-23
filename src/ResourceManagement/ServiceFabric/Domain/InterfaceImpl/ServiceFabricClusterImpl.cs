@@ -2,17 +2,13 @@
 using Microsoft.Azure.Management.ServiceFabric.Fluent.ServiceFabricCluster.Definition;
 
 
-namespace Microsoft.Azure.Management.ServiceFabric.Fluent.Domain.InterfaceImpl
+namespace Microsoft.Azure.Management.ServiceFabric.Fluent
 {
     internal partial class ServiceFabricClusterImpl
     {
-        string IWithVmImage.VmImage
+        ServiceFabricCluster.Definition.IWithReliability ServiceFabricCluster.Definition.IWithWindowsImage.WithWindowsImage()
         {
-            get 
-            {
-               return this.VmImage();
-            }
+            return this.WindowsImage();
         }
-
     }
 }

@@ -539,7 +539,7 @@ namespace Samples.ServiceFabric
             azure.ServiceFabricClusters.Define(clusterName)
                 .WithRegion(region)
                 .WithExistingResourceGroup(groupName)
-                .WithOsType(ServiceFabricOsType.Windows)
+                .WithWindowsImage()
                 //.WithUpgradeMode(UpgradeMode.Automatic)
                 .WithReliability(ReliabilityLevel.Silver)
                 //.WithAddonFeature(AddOnFeatures.RepairManager)
@@ -554,11 +554,10 @@ namespace Samples.ServiceFabric
                 //.WithAzureActiveDirectoryAuthentication(azureActiveDirectory)
                 //.WithDiagnosticStorageAccount()
                 //.WithManagementEndpoint()
-                .WithOneCertificate(cert)
-                .WithStorageAccountVmDisks(storageAccount)
+                .WithOneCertificateOnly(cert)
                 .WithStorageAccountDiagnostics(storageAccount2)
                 .AddNodeType(nodeTypeName)
-                    .WithScaleSet(scaleSet)
+                    //.WithScaleSet(scaleSet)
                     //.WithDefaultPorts()
                     //.WitDefaultApplicationPorts()
                     //.WithDefaultEphemeralPorts()
@@ -570,7 +569,7 @@ namespace Samples.ServiceFabric
                 //.DefineUpgradeDescription()
                 //    .WithForceRestart(false)
                 //    .WithUpgradeReplicaSetCheckTimeout(new TimeSpan(0, 5, 0))
-                //.WithAllDefaults()
+                .WithDefaults()
                 .Create();
 
             #endregion

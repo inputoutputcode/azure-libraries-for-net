@@ -31,7 +31,7 @@ using System.Runtime.InteropServices;
 using System.Net;
 
 using Environment = Microsoft.Azure.Management.ServiceFabric.Fluent.Models.Environment;
-
+using Microsoft.Azure.Management.Compute.Fluent.Models;
 
 namespace Fluent.Tests
 {
@@ -112,7 +112,8 @@ namespace Fluent.Tests
                     var serviceFabricCluster = serviceFabricManager.ServiceFabricClusters.Define(clusterName)
                         .WithRegion(region)
                         .WithExistingResourceGroup(resourceGroup)
-                        .WithWindows()
+                        .WithWindowsImage()
+                        //.WithImageSku(VirtualMachineSizeTypes.StandardD2V2)
                         .WithReliability(ReliabilityLevel.Silver)
                         .WithOneCertificateOnly(clusterCertificate)
                         .WithStorageAccountDiagnostics(storageVmDisks)
