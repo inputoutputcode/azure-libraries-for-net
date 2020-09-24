@@ -29,9 +29,7 @@ using System.Security.Cryptography;
 using Newtonsoft.Json;
 using System.Runtime.InteropServices;
 using System.Net;
-
-using Environment = Microsoft.Azure.Management.ServiceFabric.Fluent.Models.Environment;
-using Microsoft.Azure.Management.Compute.Fluent.Models;
+using System.Runtime.CompilerServices;
 
 namespace Fluent.Tests
 {
@@ -44,7 +42,7 @@ namespace Fluent.Tests
             {
                 #region Parameters
 
-                var region = Region.USEast2;
+                var region = Region.USEast;
                 string deploymentName = "fb" + DateTime.Now.ToString("ddHHmm");
                 string resourceGroupName = deploymentName;
                 string vaultName = deploymentName + "kv";
@@ -87,20 +85,10 @@ namespace Fluent.Tests
 
                     var resourceGroup = CreateResourceGroup(region, resourceGroupName, resourceManager);
                     var vault1 = CreateKeyVault(region, vaultName, keyVaultManager, resourceGroup);
-
-                    //var certificate = CreateSelfSignedServerCertificate(clusterDnsName, password);
-                    var certificateBytes = CreateSelfSignedServerCertificate(clusterCertificateName, password, clusterDnsName);
-                    var clusterCertificate = new X509Certificate2(certificateBytes, password);
-                    string rawCertData = Convert.ToBase64String(certificateBytes, 0, certificateBytes.Length);
-                    var secretJson = new CertificateSecretObject() { Data = rawCertData, DataType = "pfx", Password = password };
-                    var stringMessage = JsonConvert.SerializeObject(secretJson, Formatting.Indented);
-                    var bytes = Encoding.UTF8.GetBytes(stringMessage);
-                    string secretValue = Convert.ToBase64String(bytes, 0, bytes.Length);
-
-                    if (HttpMockServer.Mode == HttpRecorderMode.Record) SdkContext.DelayProvider.Delay(10000);
-                    var secret = vault1.Secrets.Define(clusterCertificateName)
-                            .WithValue(secretValue)
-                            .Create();
+                    string secretId = string.Empty;
+                    var protectedCertificateBytes = CreateCertificate(clusterDnsName, keyVaultManager, vault1, password, out secretId);
+                    
+                    var clusterCertificate = new X509Certificate2(protectedCertificateBytes, password);
 
                     var storageAccountDiagnostics = CreateStorageAccount(storageAccountName, region, storageManager, resourceGroup);
                     var storageVmDisks = CreateStorageAccount(storageAccountName2, region, storageManager, resourceGroup);
@@ -113,21 +101,14 @@ namespace Fluent.Tests
                         .WithRegion(region)
                         .WithExistingResourceGroup(resourceGroup)
                         .WithWindowsImage()
-                        //.WithImageSku(VirtualMachineSizeTypes.StandardD2V2)
                         .WithReliabilityLevel(ReliabilityLevel.Silver)
                         .WithOneCertificateOnly(clusterCertificate)
                         .WithStorageAccountDiagnostics(storageVmDisks)
                         .AddNodeType(nodeTypeName)
                         .WithDefaults()
                         .Create();
-
-                    var scaleSet = CreateScaleSet(region, backendPoolName1, vmssName, rdpNatPool, userName, password, clusterDnsName, subnetName, computeManager, resourceGroup, storageAccountDiagnostics, network, loadBalancer1, clusterCertificate.Thumbprint, vault1, secret.Id);
-
-
-
-                    //    "certificateCommonName": {
-                    //        "value": "myclustername.southcentralus.cloudapp.azure.com"
-                    //    },
+                    
+                    var scaleSet = CreateScaleSet(region, backendPoolName1, vmssName, rdpNatPool, userName, password, subnetName, computeManager, resourceGroup, storageAccountDiagnostics, network, loadBalancer1, clusterCertificate.Thumbprint, vault1, secretId, nodeTypeName, serviceFabricCluster.ClusterEndpoint);
 
                    Assert.Equal(ReliabilityLevel.Silver, serviceFabricCluster.Inner.ReliabilityLevel);
                 }
@@ -135,93 +116,39 @@ namespace Fluent.Tests
                 {
                     try
                     {
-                        TestHelper.CreateResourceManager().ResourceGroups.BeginDeleteByName(resourceGroupName);
+                        //TestHelper.CreateResourceManager().ResourceGroups.BeginDeleteByName(resourceGroupName);
                     }
                     catch { }
                 }
             }
         }
 
-        //private void CreateAsync()
-        //{
-
-        //    await Task.WhenAll(
-        //        storageManager.StorageAccounts.Define(storageAccount1Name)
-        //        .WithRegion(region)
-        //        .WithExistingResourceGroup(resourceGroup)
-        //        .WithSku(StorageAccountSkuType.Standard_LRS)
-        //        .CreateAsync();
-        //        .ContinueWith(s =>
-        //        {
-        //            storageAccount1 = s.Result;
-        //            return storageAccount1;
-        //        }),
-        //        storageManager.StorageAccounts.Define(storageAccount2Name)
-        //        .WithRegion(region)
-        //        .WithExistingResourceGroup(resourceGroup)
-        //        .WithSku(StorageAccountSkuType.Standard_LRS)
-        //        .CreateAsync();
-        //        .ContinueWith(s =>
-        //         {
-        //             storageAccount2 = s.Result;
-        //             return storageAccount2;
-        //         }),
-
-        //    );
-        //}
-
-
-        private X509Certificate2 CreateSelfSignedServerCertificate(string commonName, string password)
-        {
-            var sanBuilder = new SubjectAlternativeNameBuilder();
-            sanBuilder.AddDnsName(commonName);
-
-            var distinguishedName = new X500DistinguishedName($"CN={commonName}");
-
-            using (RSA rsa = new RSACryptoServiceProvider(4096, new CspParameters(24, "Microsoft Enhanced RSA and AES Cryptographic Provider", Guid.NewGuid().ToString())))
-            {
-                var request = new CertificateRequest(distinguishedName, rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
-                request.CertificateExtensions.Add(new X509KeyUsageExtension(X509KeyUsageFlags.KeyEncipherment | X509KeyUsageFlags.DigitalSignature, false));
-                request.CertificateExtensions.Add(new X509EnhancedKeyUsageExtension(new OidCollection { new Oid("1.3.6.1.5.5.7.3.2"), new Oid("1.3.6.1.5.5.7.3.1") }, false));
-                request.CertificateExtensions.Add(sanBuilder.Build());
-
-                var certificate = request.CreateSelfSigned(new DateTimeOffset(DateTime.UtcNow.AddDays(-1)), new DateTimeOffset(DateTime.UtcNow.AddDays(3650)));
-                certificate.FriendlyName = commonName;
-
-                return new X509Certificate2(certificate.Export(X509ContentType.Pfx, password), password, X509KeyStorageFlags.Exportable);
-            }
-        }
-
         private byte[] CreateSelfSignedServerCertificate(string certificateName, string password, string commonName)
         {
-            SubjectAlternativeNameBuilder sanBuilder = new SubjectAlternativeNameBuilder();
-            sanBuilder.AddIpAddress(IPAddress.Loopback);
-            sanBuilder.AddIpAddress(IPAddress.IPv6Loopback);
-            sanBuilder.AddDnsName(commonName);
-
-            X500DistinguishedName distinguishedName = new X500DistinguishedName($"CN={commonName}");
-
-            using (RSA rsa = new RSACryptoServiceProvider(4096, new CspParameters(24, "Microsoft Enhanced RSA and AES Cryptographic Provider", Guid.NewGuid().ToString())))
+            using (var rsa = new RSACryptoServiceProvider(4096, new CspParameters(24, "Microsoft Enhanced RSA and AES Cryptographic Provider", Guid.NewGuid().ToString())))
             {
-                //rsa.PersistKeyInCsp = false;
+                rsa.PersistKeyInCsp = false;
 
+                var distinguishedName = new X500DistinguishedName($"CN={certificateName}");
                 var certificateRequest = new CertificateRequest(distinguishedName, rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+
+                var sanBuilder = new SubjectAlternativeNameBuilder();
+                sanBuilder.AddIpAddress(IPAddress.Loopback);
+                sanBuilder.AddIpAddress(IPAddress.IPv6Loopback);
+                sanBuilder.AddDnsName(commonName);
                 certificateRequest.CertificateExtensions.Add(sanBuilder.Build());
-                certificateRequest.CertificateExtensions.Add(
-                    new X509KeyUsageExtension(X509KeyUsageFlags.DataEncipherment | X509KeyUsageFlags.KeyEncipherment | X509KeyUsageFlags.DigitalSignature, false));
-                certificateRequest.CertificateExtensions.Add(
-                   new X509EnhancedKeyUsageExtension(
-                       new OidCollection { new Oid("1.3.6.1.5.5.7.3.1"), new Oid("1.3.6.1.5.5.7.3.2") }, false));
+
+                certificateRequest.CertificateExtensions.Add(new X509KeyUsageExtension(X509KeyUsageFlags.KeyEncipherment | X509KeyUsageFlags.DigitalSignature, false));
+
+                certificateRequest.CertificateExtensions.Add(new X509EnhancedKeyUsageExtension(new OidCollection { new Oid("1.3.6.1.5.5.7.3.1"), new Oid("1.3.6.1.5.5.7.3.2") }, false));
 
                 using (X509Certificate2 certificate = certificateRequest.CreateSelfSigned(new DateTimeOffset(DateTime.UtcNow.AddDays(-1)), new DateTimeOffset(DateTime.UtcNow.AddDays(3650))))
                 {
                     if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                         certificate.FriendlyName = certificateName;
 
-                    // At this line the persisted key still exists so it reports its name and CSP/KSP into the PFX.
                     return certificate.Export(X509ContentType.Pkcs12, password);
                 }
-                //return new X509Certificate2(certificate.Export(X509ContentType.Pfx, password), password, X509KeyStorageFlags.MachineKeySet);
             }
         }
 
@@ -469,7 +396,7 @@ namespace Fluent.Tests
             return loadBalancer1;
         }
 
-        private static IVirtualMachineScaleSet CreateScaleSet(Region region, string backendPoolName1, string vmssName, string rdpNatPool, string userName, string password, string clusterDnsName, string subnetName, IComputeManager computeManager, IResourceGroup resourceGroup, IStorageAccount storageAccountDiagnostics, INetwork network, ILoadBalancer loadBalancer1, string thumbprint, IVault vault, string secretIdentifier)
+        private static IVirtualMachineScaleSet CreateScaleSet(Region region, string backendPoolName1, string vmssName, string rdpNatPool, string userName, string password, string subnetName, IComputeManager computeManager, IResourceGroup resourceGroup, IStorageAccount storageAccountDiagnostics, INetwork network, ILoadBalancer loadBalancer1, string thumbprint, IVault vault, string secretIdentifier, string nodeTypeName, string clusterEndpoint)
         {
             var certificateSettings = new Dictionary<string, string>()
             {
@@ -477,7 +404,19 @@ namespace Fluent.Tests
                 { "x509StoreName", "My" }
             };
 
-            //  "commonNames": [
+            //    public class Root
+            //    {
+            //        public List<string> commonNames { get; set; }
+            //        public string x509StoreName { get; set; }
+            //    }
+
+            //var certificateSettings = new Dictionary<string, string>()
+            //{
+            //    { "commonNames", thumbprint },
+            //    { "x509StoreName", "My" }
+            //};
+
+            //"commonNames": [
             //      "[parameters('certificateCommonName')]"
             //  ],
             //  "x509StoreName": "[parameters('certificateStoreValue')]"
@@ -494,11 +433,12 @@ namespace Fluent.Tests
                                     .WithLatestWindowsImage("MicrosoftWindowsServer", "WindowsServer", "2019-Datacenter-with-Containers")
                                     .WithAdminUsername(userName)
                                     .WithAdminPassword(password)
-                                    .WithComputerNamePrefix("node1")
+                                    .WithComputerNamePrefix(nodeTypeName)
                                     .WithVaultSecret(vault.Id, secretIdentifier, "My")
                                     .WithOverProvision(false)
                                     .WithUpgradeMode(Microsoft.Azure.Management.Compute.Fluent.Models.UpgradeMode.Automatic)
                                     .WithCapacity(5)
+                                    .WithVirtualMachinePublicIp()
                                     // Use a VM extension to install Service Fabric
                                     .DefineNewExtension("ServiceFabric")
                                         .WithPublisher("Microsoft.Azure.ServiceFabric")
@@ -507,8 +447,8 @@ namespace Fluent.Tests
                                         .WithMinorVersionAutoUpgrade()
                                         .WithProtectedSetting("StorageAccountKey1", storageAccountDiagnostics.GetKeys()[0])
                                         .WithProtectedSetting("StorageAccountKey2", storageAccountDiagnostics.GetKeys()[1])
-                                        .WithPublicSetting("clusterEndpoint", clusterDnsName)
-                                        .WithPublicSetting("nodeTypeRef", "node1")
+                                        .WithPublicSetting("clusterEndpoint", clusterEndpoint)
+                                        .WithPublicSetting("nodeTypeRef", nodeTypeName)
                                         .WithPublicSetting("dataPath", "D:\\\\SvcFab")
                                         .WithPublicSetting("durabilityLevel", "Silver")
                                         .WithPublicSetting("enableParallelJobs", true)
@@ -516,6 +456,7 @@ namespace Fluent.Tests
                                         .WithPublicSetting("certificate", certificateSettings)
                                         .Attach()
                                     .Create();
+
             return scaleSet;
         }
 
@@ -526,26 +467,6 @@ namespace Fluent.Tests
                 .WithExistingResourceGroup(resourceGroup)
                 .WithSku(StorageAccountSkuType.Standard_LRS)
                 .Create();
-        }
-
-        private static CertificateBundle CreateCertificate(string clusterDnsName, IKeyVaultManager keyVaultManager, IVault vault1)
-        {
-            var servicePrincipalInfo = ParseAuthFile(System.Environment.GetEnvironmentVariable("AZURE_AUTH_LOCATION"));
-            var keyVaultClient = new KeyVaultClient(new KeyVaultClient.AuthenticationCallback(async (authority, resource, scope) =>
-            {
-                var context = new AuthenticationContext(authority, TokenCache.DefaultShared);
-                var result = await context.AcquireTokenAsync(resource, new ClientCredential(servicePrincipalInfo.ClientId, servicePrincipalInfo.ClientSecret));
-                return result.AccessToken;
-            }), ((KeyVaultManagementClient)keyVaultManager.Vaults.Manager.Inner).HttpClient);
-
-            var certificateBundle = CreateCertificateInKeyVaultAsync(keyVaultClient, vault1.VaultUri, "clustercert", clusterDnsName).Result;
-
-            //  var secret = vault1.Secrets
-            //    .Define(secretName)
-            //    .WithValue(secretValue)
-            //    .Create();
-
-            return certificateBundle;
         }
 
         private static IVault CreateKeyVault(Region region, string vaultName, IKeyVaultManager keyVaultManager, IResourceGroup resourceGroup)
@@ -560,6 +481,7 @@ namespace Fluent.Tests
                                         .ForServicePrincipal(spnCredentialsClientId)
                                         .AllowKeyAllPermissions()
                                         .AllowSecretAllPermissions()
+                                        .AllowCertificateAllPermissions()
                                         .Attach()
                                     .WithDeploymentEnabled()
                                     .Create();
@@ -614,29 +536,52 @@ namespace Fluent.Tests
             return info;
         }
 
-        private static async Task<CertificateBundle> CreateCertificateInKeyVaultAsync(KeyVaultClient client, string vaultUrl, string certName, string commonName)
+        private static byte[] CreateCertificate(string clusterDnsName, IKeyVaultManager keyVaultManager, IVault vault1, string password, out string secretId)
         {
-            var certificateOperation = await client.CreateCertificateAsync(
-                vaultUrl,
+            var servicePrincipalInfo = ParseAuthFile(System.Environment.GetEnvironmentVariable("AZURE_AUTH_LOCATION"));
+            var keyVaultClient = new KeyVaultClient(new KeyVaultClient.AuthenticationCallback(async (authority, resource, scope) =>
+            {
+                var context = new AuthenticationContext(authority, TokenCache.DefaultShared);
+                var result = await context.AcquireTokenAsync(resource, new ClientCredential(servicePrincipalInfo.ClientId, servicePrincipalInfo.ClientSecret));
+                return result.AccessToken;
+            }));
+            //, ((KeyVaultManagementClient)keyVaultManager.Vaults.Manager.Inner).HttpClient
+
+            string certName = clusterDnsName.Split('.')[0];
+
+            var certificateOperation = keyVaultClient.CreateCertificateAsync(
+                vault1.VaultUri,
                 certName,
-                new CertificatePolicy(
-                    keyProperties: new KeyProperties(false, "RSA", 2048, false),
-                    x509CertificateProperties: new X509CertificateProperties(
-                        "CN=" + commonName,
-                        keyUsage: new List<string> { X509KeyUsageFlags.KeyCertSign.ToString(), X509KeyUsageFlags.DigitalSignature.ToString() }, 
-                        ekus: new List<string> { "1.3.6.1.5.5.7.3.2", "1.3.6.1.5.5.7.3.1" }),
-                    issuerParameters: new IssuerParameters("Self")));
+                new CertificatePolicy()
+                {
+                    SecretProperties = new SecretProperties("application/x-pkcs12"),
+                    X509CertificateProperties = new X509CertificateProperties()
+                    {
+                        Subject = "cn=" + clusterDnsName,
+                        Ekus = new List<string> { "1.3.6.1.5.5.7.3.1", "1.3.6.1.5.5.7.3.2" }
+                    },
+                    IssuerParameters = new IssuerParameters() { Name = "Self" }
+                }
+                ).Result;
 
             while (certificateOperation.Status == "inProgress")
             {
                 Console.WriteLine($"Creation of certificate '{certName}' is in progress");
-                await Task.Delay(1000);
-                certificateOperation = await client.GetCertificateOperationAsync(vaultUrl, certName);
+                Task.Delay(1000);
+                certificateOperation = keyVaultClient.GetCertificateOperationAsync(vault1.VaultUri, certName).Result;
             }
 
             Console.WriteLine($"Creation of certificate '{certName}' is in status '{certificateOperation.Status}'");
-            
-            return await client.GetCertificateAsync(vaultUrl, certName); ;
+
+            var secretBundle = keyVaultClient.GetSecretAsync(vault1.VaultUri, certName).Result;
+
+            var kvSecretBytes = Convert.FromBase64String(secretBundle.Value);
+            var certCollection = new X509Certificate2Collection();
+            certCollection.Import(kvSecretBytes, null, X509KeyStorageFlags.Exportable);
+
+            secretId = secretBundle.SecretIdentifier.Identifier;
+
+            return certCollection.Export(X509ContentType.Pkcs12, password);
         }
     }
 

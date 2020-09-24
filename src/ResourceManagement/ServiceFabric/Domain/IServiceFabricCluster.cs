@@ -20,7 +20,10 @@ namespace Microsoft.Azure.Management.ServiceFabric.Fluent
         /// <summary>
         /// Gets the provisioning state of the Service Fabric cluster.
         /// </summary>
-        string ClusterState { get; }
+        ClusterState ClusterState { get; }
+
+
+        string ClusterEndpoint { get; }
 
         /// <summary>
         /// Gets the Service Fabric version.

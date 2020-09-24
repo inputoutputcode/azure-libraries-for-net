@@ -36,9 +36,15 @@ namespace Microsoft.Azure.Management.ServiceFabric.Fluent
         IDefinition,
         IUpdate
     {
-        string IIndexable.Key => throw new NotImplementedException();
+        public ClusterState ClusterState
+        {
+            get { return this.Inner.ClusterState;  }
+        }
 
-        public string ClusterState => throw new NotImplementedException();
+        public string ClusterEndpoint
+        {
+            get { return this.Inner.ClusterEndpoint;  }
+        }
 
         internal ServiceFabricClusterImpl(string name, ClusterParameters innerModel, IServiceFabricManager manager)
             : base(name, innerModel, manager)
