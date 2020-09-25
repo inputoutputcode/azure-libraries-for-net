@@ -1,21 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
+
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.Management.ServiceFabric.Fluent.Models;
 using Microsoft.Azure.Management.ServiceFabric.Fluent.ServiceFabricCluster.Update;
 using Microsoft.Azure.Management.ServiceFabric.Fluent.ServiceFabricCluster.Definition;
 using Microsoft.Azure.Management.ResourceManager.Fluent;
-using Microsoft.Azure.Management.ResourceManager.Fluent.Core.ResourceActions;
-using Microsoft.Azure.Management.ResourceManager.Fluent.Core.Resource.Definition;
 using Microsoft.Azure.Management.ResourceManager.Fluent.Core;
 
 using Environment = Microsoft.Azure.Management.ServiceFabric.Fluent.Models.Environment;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.Azure.Management.Storage.Fluent;
-using System.IO;
-using Microsoft.Azure.Management.Compute.Fluent.Models;
 
 namespace Microsoft.Azure.Management.ServiceFabric.Fluent
 {
@@ -143,7 +139,7 @@ namespace Microsoft.Azure.Management.ServiceFabric.Fluent
             fabricSettings.Name = "Security";
             fabricSettings.Parameters = new List<SettingsParameterDescription>() { new SettingsParameterDescription("ClusterProtectionLevel", "EncryptAndSign") };
             this.Inner.FabricSettings.Add(fabricSettings);
-            this.Inner.ManagementEndpoint = $"https://{this.Name}.{this.Region.Name}.cloudapp.azure.com:19000";
+            this.Inner.ManagementEndpoint = $"https://{this.Name}.{this.Region.Name}.cloudapp.azure.com:19080";
             this.Inner.UpgradeMode = Models.UpgradeMode.Automatic;
 
             return this;
@@ -164,16 +160,6 @@ namespace Microsoft.Azure.Management.ServiceFabric.Fluent
                 throw new NotImplementedException();
             }
         }
-
-        protected override Task<ClusterParameters> GetInnerAsync(CancellationToken cancellationToken)
-        {
-            throw new NotImplementedException();
-        }
-
-        ServiceFabricVersion IServiceFabricCluster.Version => throw new NotImplementedException();
-
-        IServiceFabricManager IHasManager<IServiceFabricManager>.Manager => throw new NotImplementedException();
-
     }
 }
 

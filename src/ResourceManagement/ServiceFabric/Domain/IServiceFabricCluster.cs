@@ -22,12 +22,7 @@ namespace Microsoft.Azure.Management.ServiceFabric.Fluent
         /// </summary>
         ClusterState ClusterState { get; }
 
-
         string ClusterEndpoint { get; }
 
-        /// <summary>
-        /// Gets the Service Fabric version.
-        /// </summary>
-        ServiceFabricVersion Version { get; }
     }
 }

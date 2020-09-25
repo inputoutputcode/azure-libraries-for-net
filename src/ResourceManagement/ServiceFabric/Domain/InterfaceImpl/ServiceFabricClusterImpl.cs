@@ -1,7 +1,8 @@
 ﻿using Microsoft.Azure.Management.Storage.Fluent;
 using Microsoft.Azure.Management.ServiceFabric.Fluent.Models;
 using System.Security.Cryptography.X509Certificates;
-
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Microsoft.Azure.Management.ServiceFabric.Fluent
 {
@@ -35,6 +36,21 @@ namespace Microsoft.Azure.Management.ServiceFabric.Fluent
         ServiceFabricCluster.Definition.IWithCreate ServiceFabricCluster.Definition.IWithDefaults.WithDefaults()
         {
             return this.WithDefaults();
+        }
+
+        //async Task<Microsoft.Azure.Management.ServiceFabric.Fluent.IServiceFabricCluster> Microsoft.Azure.Management.ResourceManager.Fluent.Core.ResourceActions.IRefreshable<Microsoft.Azure.Management.ServiceFabric.Fluent.IServiceFabricCluster>.RefreshAsync(CancellationToken cancellationToken)
+        //{
+        //    return await this.RefreshAsync(cancellationToken);
+        //}
+
+        //public override IServiceFabricCluster Refresh()
+        //{
+        //    return base.Refresh();
+        //}
+
+        protected override Task<ClusterParameters> GetInnerAsync(CancellationToken cancellationToken)
+        {
+            return this.GetInnerAsync(cancellationToken);
         }
     }
 }
