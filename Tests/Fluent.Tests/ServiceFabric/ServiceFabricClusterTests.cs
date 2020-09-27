@@ -37,12 +37,14 @@ namespace Fluent.Tests
 {
     public class ServiceFabric
     {
+
+
         [Fact]
         public void CanCreateBasicCluster()
         {
             using (var mockContext = FluentMockContext.Start(this.GetType().FullName))
             {
-                #region Parameters
+                #region Parameters / Setup
 
                 var region = Region.USEast;
                 string deploymentName = "fb" + DateTime.Now.ToString("ddHHmm");
@@ -76,17 +78,17 @@ namespace Fluent.Tests
 
                 X509Certificate2 clusterCertificate = null;
 
+                var resourceManager = TestHelper.CreateResourceManager();
+                var keyVaultManager = TestHelper.CreateKeyVaultManager();
+                var storageManager = TestHelper.CreateStorageManager();
+                var networkManager = TestHelper.CreateNetworkManager();
+                var computeManager = TestHelper.CreateComputeManager();
+                var serviceFabricManager = TestHelper.CreateServiceFabricManager();
+
                 #endregion
 
                 try
                 {
-                    var resourceManager = TestHelper.CreateResourceManager();
-                    var keyVaultManager = TestHelper.CreateKeyVaultManager();
-                    var storageManager = TestHelper.CreateStorageManager();
-                    var networkManager = TestHelper.CreateNetworkManager();
-                    var computeManager = TestHelper.CreateComputeManager();
-                    var serviceFabricManager = TestHelper.CreateServiceFabricManager();
-
                     var resourceGroup = CreateResourceGroup(region, resourceGroupName, resourceManager);
                     var vault1 = CreateKeyVault(region, vaultName, keyVaultManager, resourceGroup);
                     var secretBundle = CreateCertificate(clusterDnsName, keyVaultManager, vault1);
@@ -122,35 +124,35 @@ namespace Fluent.Tests
                     
                     var scaleSet = CreateScaleSet(region, backendPoolName1, vmssName, rdpNatPool, userName, password, subnetName, computeManager, resourceGroup, storageAccountDiagnostics, network, loadBalancer1, clusterCertificate.Thumbprint, vault1, secretBundle.SecretIdentifier.Identifier, nodeTypeName, serviceFabricCluster.ClusterEndpoint);
 
-                    //int totalWaitTimeInSeconds = 0;
-                    //int waitTimeInSeconds = 15;
-                    //while (serviceFabricCluster.ClusterState != ClusterState.Ready)
-                    //{
-                    //    serviceFabricCluster = serviceFabricCluster.Refresh();
-                    //    SdkContext.DelayProvider.Delay(waitTimeInSeconds * 1000);
+                    int totalWaitTimeInSeconds = 0;
+                    int waitTimeInSeconds = 15;
+                    while (serviceFabricCluster.ClusterState != ClusterState.Ready)
+                    {
+                        serviceFabricCluster = serviceFabricCluster.Refresh();
+                        SdkContext.DelayProvider.Delay(waitTimeInSeconds * 1000);
 
-                    //    if ((totalWaitTimeInSeconds += waitTimeInSeconds) > 216000) // 60 mins
-                    //    {
-                    //        throw new Exception("Provisioning failed.");
-                    //    }
-                    //}
+                        if ((totalWaitTimeInSeconds += waitTimeInSeconds) > 216000) // 60 mins
+                        {
+                            throw new Exception("Provisioning failed.");
+                        }
+                    }
 
-                    //Func<CancellationToken, Task<SecuritySettings>> GetSecurityCredentials = (ct) =>
-                    //{
-                    //    // get the X509Certificate2 either from Certificate store or from file.
-                    //    var remoteSecuritySettings = new RemoteX509SecuritySettings(new List<string> { clusterCertificate.Thumbprint });
-                    //    return Task.FromResult<SecuritySettings>(new X509SecuritySettings(clusterCertificate, remoteSecuritySettings));
-                    //};
+                    Func<CancellationToken, Task<SecuritySettings>> GetSecurityCredentials = (ct) =>
+                    {
+                        // get the X509Certificate2 either from Certificate store or from file.
+                        var remoteSecuritySettings = new RemoteX509SecuritySettings(new List<string> { clusterCertificate.Thumbprint });
+                        return Task.FromResult<SecuritySettings>(new X509SecuritySettings(clusterCertificate, remoteSecuritySettings));
+                    };
 
-                    //var serviceFabricClient = new ServiceFabricClientBuilder()
-                    //    .UseEndpoints(new Uri($"https://{clusterDnsName}:19080"))
-                    //    .UseX509Security(GetSecurityCredentials)
-                    //    .BuildAsync().GetAwaiter().GetResult();
+                    var serviceFabricClient = new ServiceFabricClientBuilder()
+                        .UseEndpoints(new Uri($"https://{clusterDnsName}:19080"))
+                        .UseX509Security(GetSecurityCredentials)
+                        .BuildAsync().GetAwaiter().GetResult();
 
 
-                    //var clusterHealth = serviceFabricClient.Cluster.GetClusterHealthAsync().Result;
+                    var clusterHealth = serviceFabricClient.Cluster.GetClusterHealthAsync().Result;
 
-                    //Assert.True(clusterHealth.UnhealthyEvaluations.Count() == 0);
+                    Assert.True(clusterHealth.UnhealthyEvaluations.Count() == 0);
                 }
                 finally
                 {
@@ -391,13 +393,15 @@ namespace Fluent.Tests
                                             .WithRequestPath("/")
                                             .WithPort(80)
                                             .Attach()
-                                        .DefineHttpProbe(fabricGatewayProbe)
-                                            .WithRequestPath("/")
+                                        .DefineTcpProbe(fabricGatewayProbe)
                                             .WithPort(19000)
+                                            .WithIntervalInSeconds(5)
+                                            .WithNumberOfProbes(2)
                                             .Attach()
-                                        .DefineHttpProbe(fabricHttpGatewayProbe)
-                                            .WithRequestPath("/")
+                                        .DefineTcpProbe(fabricHttpGatewayProbe)
                                             .WithPort(19080)
+                                            .WithIntervalInSeconds(5)
+                                            .WithNumberOfProbes(2)
                                             .Attach()
                                         .WithSku(LoadBalancerSkuType.Standard)
                                         .Create();
@@ -558,7 +562,5 @@ namespace Fluent.Tests
 
             return keyVaultClient.GetSecretAsync(vault1.VaultUri, certName).Result;
         }
-
-        
     }
 }

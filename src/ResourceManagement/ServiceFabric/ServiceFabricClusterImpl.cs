@@ -7,11 +7,11 @@ using Microsoft.Azure.Management.ServiceFabric.Fluent.Models;
 using Microsoft.Azure.Management.ServiceFabric.Fluent.ServiceFabricCluster.Update;
 using Microsoft.Azure.Management.ServiceFabric.Fluent.ServiceFabricCluster.Definition;
 using Microsoft.Azure.Management.ResourceManager.Fluent;
-using Microsoft.Azure.Management.ResourceManager.Fluent.Core;
 
 using Environment = Microsoft.Azure.Management.ServiceFabric.Fluent.Models.Environment;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.Azure.Management.Storage.Fluent;
+
 
 namespace Microsoft.Azure.Management.ServiceFabric.Fluent
 {
@@ -135,9 +135,11 @@ namespace Microsoft.Azure.Management.ServiceFabric.Fluent
         public IWithCreate WithDefaults()
         {
             //this.Inner.ClusterCodeVersion = "7.1.409.9590";
-            var fabricSettings = new SettingsSectionDescription();
-            fabricSettings.Name = "Security";
-            fabricSettings.Parameters = new List<SettingsParameterDescription>() { new SettingsParameterDescription("ClusterProtectionLevel", "EncryptAndSign") };
+            var fabricSettings = new SettingsSectionDescription
+            {
+                Name = "Security",
+                Parameters = new List<SettingsParameterDescription>() { new SettingsParameterDescription("ClusterProtectionLevel", "EncryptAndSign") }
+            };
             this.Inner.FabricSettings.Add(fabricSettings);
             this.Inner.ManagementEndpoint = $"https://{this.Name}.{this.Region.Name}.cloudapp.azure.com:19080";
             this.Inner.UpgradeMode = Models.UpgradeMode.Automatic;
